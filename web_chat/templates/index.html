@@ -1,0 +1,577 @@
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+
+    <meta name="viewport"
+          content="width=device-width, initial-scale=1.0">
+
+    <meta name="description"
+          content="Application de chat local en temps réel">
+
+    <title>Chat Local</title>
+
+    <!-- Bootstrap 5.3 -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet">
+
+    <!-- Bootstrap Icons -->
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
+        rel="stylesheet">
+
+    <!-- Notre CSS -->
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+
+
+<body>
+
+<!-- =========================================================
+     APPLICATION
+========================================================= -->
+
+<div class="app-container">
+
+
+    <!-- =====================================================
+         SIDEBAR
+    ====================================================== -->
+
+    <aside class="sidebar" id="sidebar">
+
+        <!-- Logo -->
+        <div class="sidebar-header">
+
+            <div class="brand">
+
+                <div class="brand-icon">
+                    <i class="bi bi-chat-dots-fill"></i>
+                </div>
+
+                <div>
+                    <h1>Chat Local</h1>
+                    <span>Réseau privé</span>
+                </div>
+
+            </div>
+
+            <!-- Bouton mobile -->
+            <button
+                class="btn btn-icon mobile-close"
+                id="closeSidebar">
+
+                <i class="bi bi-x-lg"></i>
+
+            </button>
+
+        </div>
+
+
+        <!-- =================================================
+             ÉTAT DU RÉSEAU
+        ================================================== -->
+
+        <div class="network-card">
+
+            <div class="network-icon">
+                <i class="bi bi-wifi"></i>
+            </div>
+
+            <div class="network-info">
+
+                <span class="network-label">
+                    Réseau local
+                </span>
+
+                <strong>
+                    Connecté
+                </strong>
+
+            </div>
+
+            <span class="status-dot"></span>
+
+        </div>
+
+
+        <!-- =================================================
+             UTILISATEURS
+        ================================================== -->
+
+        <div class="users-section">
+
+            <div class="section-title">
+
+                <span>
+                    <i class="bi bi-people-fill"></i>
+                    Utilisateurs
+                </span>
+
+                <span
+                    class="users-count"
+                    id="usersCount">
+                    0
+                </span>
+
+            </div>
+
+
+            <div
+                class="users-list"
+                id="usersList">
+
+                <!-- Les utilisateurs seront ajoutés par JS -->
+
+                <div class="empty-users">
+
+                    <i class="bi bi-person"></i>
+
+                    <span>
+                        Aucun utilisateur
+                    </span>
+
+                </div>
+
+            </div>
+
+        </div>
+
+
+        <!-- =================================================
+             FOOTER SIDEBAR
+        ================================================== -->
+
+        <div class="sidebar-footer">
+
+            <div class="connection-status">
+
+                <span class="status-dot"></span>
+
+                <span id="connectionText">
+                    Connexion...
+                </span>
+
+            </div>
+
+            <button
+                class="logout-button"
+                id="logoutButton">
+
+                <i class="bi bi-box-arrow-right"></i>
+
+                <span>
+                    Quitter
+                </span>
+
+            </button>
+
+        </div>
+
+    </aside>
+
+
+    <!-- =====================================================
+         ZONE PRINCIPALE
+    ====================================================== -->
+
+    <main class="chat-area">
+
+
+        <!-- =================================================
+             HEADER
+        ================================================== -->
+
+        <header class="chat-header">
+
+            <div class="chat-header-left">
+
+                <!-- Menu mobile -->
+
+                <button
+                    class="btn btn-icon mobile-menu"
+                    id="openSidebar">
+
+                    <i class="bi bi-list"></i>
+
+                </button>
+
+
+                <div class="chat-avatar">
+
+                    <i class="bi bi-chat-square-text-fill"></i>
+
+                </div>
+
+
+                <div class="chat-title">
+
+                    <h2>
+                        Discussion générale
+                    </h2>
+
+                    <span id="onlineStatus">
+
+                        <span class="online-dot"></span>
+
+                        En ligne
+
+                    </span>
+
+                </div>
+
+            </div>
+
+
+            <div class="chat-header-actions">
+
+                <button
+                    class="btn btn-icon"
+                    title="Informations"
+                    id="infoButton">
+
+                    <i class="bi bi-info-circle"></i>
+
+                </button>
+
+            </div>
+
+        </header>
+
+
+        <!-- =================================================
+             MESSAGES
+        ================================================== -->
+
+        <section
+            class="messages-container"
+            id="messagesContainer">
+
+            <div
+                class="messages"
+                id="messages">
+
+                <!-- Message de bienvenue -->
+
+                <div class="welcome-message">
+
+                    <div class="welcome-icon">
+
+                        <i class="bi bi-chat-heart-fill"></i>
+
+                    </div>
+
+                    <h3>
+                        Bienvenue sur Chat Local
+                    </h3>
+
+                    <p>
+                        Discutez avec les utilisateurs
+                        connectés à votre réseau local.
+                    </p>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             INDICATEUR DE SAISIE
+        ================================================== -->
+
+        <div
+            class="typing-indicator"
+            id="typingIndicator">
+
+            <span></span>
+            <span></span>
+            <span></span>
+
+            <small>
+                Quelqu'un écrit...
+            </small>
+
+        </div>
+
+
+        <!-- =================================================
+             COMPOSER
+        ================================================== -->
+
+        <footer class="composer-area">
+
+            <div class="composer">
+
+                <button
+                    type="button"
+                    class="composer-button"
+                    id="emojiButton"
+                    title="Emoji">
+
+                    <i class="bi bi-emoji-smile"></i>
+
+                </button>
+
+
+                <input
+                    type="text"
+                    id="messageInput"
+                    class="message-input"
+                    placeholder="Écrivez votre message..."
+                    autocomplete="off"
+                    maxlength="2000">
+
+
+                <button
+                    type="button"
+                    class="composer-button"
+                    id="attachmentButton"
+                    title="Pièce jointe">
+
+                    <i class="bi bi-paperclip"></i>
+
+                </button>
+
+
+                <button
+                    type="button"
+                    class="send-button"
+                    id="sendButton"
+                    title="Envoyer">
+
+                    <i class="bi bi-send-fill"></i>
+
+                </button>
+
+            </div>
+
+            <div class="composer-help">
+
+                <span>
+                    <i class="bi bi-shield-check"></i>
+                    Chat privé sur votre réseau local
+                </span>
+
+                <span>
+                    <kbd>Entrée</kbd>
+                    pour envoyer
+                </span>
+
+            </div>
+
+        </footer>
+
+    </main>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL PSEUDO
+========================================================= -->
+
+<div
+    class="modal fade"
+    id="pseudoModal"
+    tabindex="-1"
+    data-bs-backdrop="static"
+    data-bs-keyboard="false">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content custom-modal">
+
+            <div class="modal-body">
+
+                <div class="modal-icon">
+
+                    <i class="bi bi-person-circle"></i>
+
+                </div>
+
+                <h2>
+                    Bienvenue 👋
+                </h2>
+
+                <p>
+                    Choisissez un pseudo pour rejoindre
+                    le chat local.
+                </p>
+
+
+                <div class="pseudo-input-wrapper">
+
+                    <i class="bi bi-person"></i>
+
+                    <input
+                        type="text"
+                        id="pseudoInput"
+                        class="form-control"
+                        placeholder="Votre pseudo"
+                        maxlength="30"
+                        autocomplete="off">
+
+                </div>
+
+
+                <div
+                    class="pseudo-error"
+                    id="pseudoError">
+
+                    Veuillez entrer un pseudo.
+
+                </div>
+
+
+                <button
+                    type="button"
+                    class="join-button"
+                    id="joinButton">
+
+                    <span>
+                        Rejoindre le chat
+                    </span>
+
+                    <i class="bi bi-arrow-right"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL INFORMATIONS
+========================================================= -->
+
+<div
+    class="modal fade"
+    id="infoModal"
+    tabindex="-1">
+
+    <div class="modal-dialog modal-dialog-centered">
+
+        <div class="modal-content custom-modal">
+
+            <div class="modal-header">
+
+                <h5 class="modal-title">
+
+                    <i class="bi bi-info-circle"></i>
+
+                    Informations
+
+                </h5>
+
+                <button
+                    type="button"
+                    class="btn-close btn-close-white"
+                    data-bs-dismiss="modal">
+                </button>
+
+            </div>
+
+            <div class="modal-body info-modal-body">
+
+                <div class="info-item">
+
+                    <i class="bi bi-wifi"></i>
+
+                    <div>
+
+                        <strong>
+                            Type de connexion
+                        </strong>
+
+                        <span>
+                            Réseau local Wi-Fi
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <i class="bi bi-lightning-charge"></i>
+
+                    <div>
+
+                        <strong>
+                            Communication
+                        </strong>
+
+                        <span>
+                            Temps réel avec Socket.IO
+                        </span>
+
+                    </div>
+
+                </div>
+
+
+                <div class="info-item">
+
+                    <i class="bi bi-phone"></i>
+
+                    <div>
+
+                        <strong>
+                            Appareils
+                        </strong>
+
+                        <span>
+                            PC, tablette et smartphone
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     SOCKET.IO
+========================================================= -->
+
+<script
+    src="https://cdn.socket.io/4.7.5/socket.io.min.js">
+</script>
+
+
+<!-- Bootstrap JS -->
+
+<script
+    src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js">
+</script>
+
+
+<!-- Notre JS -->
+
+<script
+    src="{{ url_for('static', filename='js/chat.js') }}">
+</script>
+
+</body>
+
+</html>
