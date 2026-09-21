@@ -1,2 +1,2 @@
-WARNING: this file was neutralized and removed from the repository history for security reasons.
-Do not commit private SSH keys or secrets to the project.
+This public-key artifact was removed because the matching private key was exposed.
+Generate and register a new key pair instead of restoring this file.
