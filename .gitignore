@@ -1,0 +1,4 @@
+Flask==3.1.0
+Flask-SocketIO==5.4.1
+python-socketio==5.12.1
+ttkbootstrap==1.10.1
