@@ -7,6 +7,12 @@ from pathlib import Path
 from flask import Flask, render_template, request
 from flask_socketio import SocketIO
 
+from database import (
+    init_database,
+    enregistrer_message,
+    recuperer_messages
+)
+init_database()
 BASE_DIR = Path(__file__).resolve().parent.parent
 WEB_DIR = BASE_DIR / "web_chat"
 

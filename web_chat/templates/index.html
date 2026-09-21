@@ -1,47 +1,585 @@
 <!doctype html>
-<html lang="en">
+<html lang="fr">
+
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="A clean weather dashboard powered by Open-Meteo">
-  <title>SkyCast · Weather dashboard</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <meta charset="utf-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1"
+    >
+
+    <meta
+        name="description"
+        content="ChatLocal · Messagerie instantanée sur réseau local"
+    >
+
+    <title>ChatLocal · Messagerie locale</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+
+    <link
+        rel="preconnect"
+        href="https://fonts.gstatic.com"
+        crossorigin
+    >
+
+    <link
+        href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&display=swap"
+        rel="stylesheet"
+    >
+
+    <link
+        rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css') }}"
+    >
+
 </head>
+
+
 <body>
-  <div class="shell">
+
+<div class="shell">
+
+    <!-- =====================================================
+         HEADER
+    ====================================================== -->
+
     <header class="topbar">
-      <a class="brand" href="/" aria-label="SkyCast home"><span class="brand-mark">✦</span><span>SkyCast</span></a>
-      <div class="top-actions">
-        <span class="updated" id="updatedAt">Ready for your forecast</span>
-        <button class="icon-button" id="unitToggle" type="button" aria-label="Switch temperature unit">°C</button>
-        <button class="icon-button" id="themeToggle" type="button" aria-label="Toggle theme">☼</button>
-      </div>
+
+        <a
+            class="brand"
+            href="/"
+            aria-label="ChatLocal"
+        >
+
+            <span class="brand-mark">
+                ✦
+            </span>
+
+            <span>
+                ChatLocal
+            </span>
+
+        </a>
+
+
+        <div class="top-actions">
+
+            <span
+                class="updated"
+                id="connectionStatus"
+            >
+                Connexion au serveur...
+            </span>
+
+
+            <button
+                class="icon-button"
+                id="themeToggle"
+                type="button"
+                aria-label="Changer le thème"
+            >
+                ☼
+            </button>
+
+
+            <button
+                class="icon-button"
+                id="infoButton"
+                type="button"
+                aria-label="Informations"
+            >
+                ?
+            </button>
+
+        </div>
+
     </header>
 
-    <main>
-      <section class="hero-card">
-        <div class="search-row">
-          <label class="search-box" for="cityInput"><span>⌕</span><input id="cityInput" type="search" placeholder="Search a city…" autocomplete="off"><button id="searchButton" type="button">Search</button></label>
-          <button class="location-button" id="locationButton" type="button">◎ Use my location</button>
-        </div>
-        <div class="hero-content">
-          <div><p class="eyebrow" id="locationLabel">Your local forecast</p><h1 id="cityName">Search for a city</h1><p class="date" id="dateLabel">Get a live forecast from Open-Meteo</p></div>
-          <div class="current-weather"><div class="weather-icon" id="currentIcon">☀️</div><div><div class="temperature" id="currentTemp">--°</div><div class="condition" id="currentCondition">Waiting for a location</div></div></div>
-        </div>
-        <div class="metrics"><div><span>Feels like</span><strong id="feelsLike">--</strong></div><div><span>Humidity</span><strong id="humidity">--</strong></div><div><span>Wind</span><strong id="wind">--</strong></div><div><span>Precipitation</span><strong id="precipitation">--</strong></div></div>
-      </section>
 
-      <div class="dashboard-grid">
-        <section class="panel forecast-panel"><div class="panel-heading"><div><p class="eyebrow">At a glance</p><h2>7-day forecast</h2></div><span class="panel-note">Daily outlook</span></div><div class="forecast-list" id="forecastList"><div class="empty-state">Search for a city to see its forecast.</div></div></section>
-        <aside class="panel details-panel"><div class="panel-heading"><div><p class="eyebrow">Today</p><h2>Conditions</h2></div></div><div class="detail-list"><div><span>Sunrise</span><strong id="sunrise">--</strong></div><div><span>Sunset</span><strong id="sunset">--</strong></div><div><span>UV index</span><strong id="uvIndex">--</strong></div><div><span>Rain chance</span><strong id="rainChance">--</strong></div></div><div class="tip-card"><span>✧</span><div><strong>Weather tip</strong><p id="weatherTip">Choose a location to get a useful tip for today.</p></div></div></aside>
-      </div>
-      <p class="attribution">Weather data by <a href="https://open-meteo.com/" target="_blank" rel="noreferrer">Open-Meteo</a> · No API key required</p>
+    <!-- =====================================================
+         CONTENU PRINCIPAL
+    ====================================================== -->
+
+    <main>
+
+        <section class="hero-card">
+
+            <div class="hero-content">
+
+                <div>
+
+                    <p class="eyebrow">
+                        RÉSEAU LOCAL
+                    </p>
+
+                    <h1>
+                        Discutez simplement.
+                    </h1>
+
+                    <p class="hero-description">
+                        Une messagerie rapide et privée
+                        pour les utilisateurs connectés
+                        au même réseau.
+                    </p>
+
+                </div>
+
+
+                <div class="network-status">
+
+                    <span
+                        class="status-dot"
+                        id="statusDot"
+                    ></span>
+
+                    <div>
+
+                        <strong id="statusTitle">
+                            Connexion
+                        </strong>
+
+                        <span id="statusText">
+                            Initialisation...
+                        </span>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+
+            <div class="metrics">
+
+                <div>
+
+                    <span>
+                        Utilisateurs
+                    </span>
+
+                    <strong id="userCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Statut
+                    </span>
+
+                    <strong id="networkText">
+                        Hors ligne
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Messages
+                    </span>
+
+                    <strong id="messageCount">
+                        0
+                    </strong>
+
+                </div>
+
+
+                <div>
+
+                    <span>
+                        Serveur
+                    </span>
+
+                    <strong>
+                        Socket.IO
+                    </strong>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- =================================================
+             CHAT
+        ================================================== -->
+
+        <div class="dashboard-grid">
+
+
+            <!-- =============================================
+                 UTILISATEURS
+            ============================================== -->
+
+            <aside class="panel users-panel">
+
+                <div class="panel-heading">
+
+                    <div>
+
+                        <p class="eyebrow">
+                            COMMUNAUTÉ
+                        </p>
+
+                        <h2>
+                            Utilisateurs
+                        </h2>
+
+                    </div>
+
+
+                    <span
+                        class="panel-note"
+                        id="onlineCount"
+                    >
+                        0 en ligne
+                    </span>
+
+                </div>
+
+
+                <label
+                    class="search-box"
+                    for="userSearch"
+                >
+
+                    <span>
+                        ⌕
+                    </span>
+
+                    <input
+                        id="userSearch"
+                        type="search"
+                        placeholder="Rechercher..."
+                        autocomplete="off"
+                    >
+
+                </label>
+
+
+                <div
+                    class="user-list"
+                    id="userList"
+                >
+
+                    <div class="empty-state">
+
+                        Aucun utilisateur connecté.
+
+                    </div>
+
+                </div>
+
+            </aside>
+
+
+            <!-- =============================================
+                 ZONE DE CHAT
+            ============================================== -->
+
+            <section class="panel chat-panel">
+
+
+                <!-- CHAT HEADER -->
+
+                <div class="chat-header">
+
+                    <div class="chat-profile">
+
+                        <div class="chat-avatar">
+                            ✦
+                        </div>
+
+                        <div>
+
+                            <p class="eyebrow">
+                                CONVERSATION
+                            </p>
+
+                            <h2>
+                                Discussion générale
+                            </h2>
+
+                            <span
+                                class="chat-status"
+                                id="chatStatus"
+                            >
+                                En attente de connexion
+                            </span>
+
+                        </div>
+
+                    </div>
+
+
+                    <button
+                        class="icon-button"
+                        id="clearChatButton"
+                        type="button"
+                        title="Effacer l'affichage"
+                    >
+                        ⌫
+                    </button>
+
+                </div>
+
+
+                <!-- MESSAGES -->
+
+                <div
+                    class="messages"
+                    id="messages"
+                >
+
+                    <div class="welcome-message">
+
+                        <div class="welcome-icon">
+                            ✦
+                        </div>
+
+                        <h3>
+                            Bienvenue sur ChatLocal
+                        </h3>
+
+                        <p>
+                            Les messages échangés sur ce réseau
+                            apparaîtront ici.
+                        </p>
+
+                    </div>
+
+                </div>
+
+
+                <!-- TYPING -->
+
+                <div
+                    class="typing-indicator"
+                    id="typingIndicator"
+                >
+
+                    <span></span>
+                    <span></span>
+                    <span></span>
+
+                    <small>
+                        Quelqu'un écrit...
+                    </small>
+
+                </div>
+
+
+                <!-- COMPOSER -->
+
+                <div class="composer">
+
+                    <button
+                        class="composer-button"
+                        id="emojiButton"
+                        type="button"
+                        title="Emoji"
+                    >
+                        ☺
+                    </button>
+
+
+                    <input
+                        id="messageInput"
+                        type="text"
+                        placeholder="Écrire un message..."
+                        autocomplete="off"
+                        maxlength="2000"
+                    >
+
+
+                    <button
+                        class="send-button"
+                        id="sendButton"
+                        type="button"
+                    >
+
+                        <span>
+                            Envoyer
+                        </span>
+
+                        <span>
+                            ➜
+                        </span>
+
+                    </button>
+
+                </div>
+
+
+                <div class="composer-hint">
+
+                    <span>
+                        Entrée pour envoyer
+                    </span>
+
+                    <span>
+                        ·
+                    </span>
+
+                    <span>
+                        Réseau local sécurisé
+                    </span>
+
+                </div>
+
+            </section>
+
+        </div>
+
+
+        <p class="attribution">
+
+            ChatLocal ·
+            Messagerie temps réel sur réseau local
+
+        </p>
+
     </main>
-  </div>
-  <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="{{ url_for('static', filename='js/weather.js') }}"></script>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL PSEUDO
+========================================================== -->
+
+<div
+    class="modal-overlay"
+    id="pseudoModal"
+>
+
+    <div class="modal-card">
+
+        <div class="modal-icon">
+            ✦
+        </div>
+
+        <p class="eyebrow">
+            BIENVENUE
+        </p>
+
+        <h2>
+            Rejoindre ChatLocal
+        </h2>
+
+        <p>
+            Choisissez un pseudo pour commencer
+            à discuter avec les utilisateurs du réseau.
+        </p>
+
+
+        <label
+            class="modal-label"
+            for="pseudoInput"
+        >
+            Votre pseudo
+        </label>
+
+        <input
+            id="pseudoInput"
+            type="text"
+            maxlength="30"
+            placeholder="Ex : Eric"
+            autocomplete="off"
+        >
+
+
+        <button
+            class="modal-button"
+            id="joinButton"
+            type="button"
+        >
+            Rejoindre le chat
+            <span>➜</span>
+        </button>
+
+    </div>
+
+</div>
+
+
+<!-- =========================================================
+     MODAL INFORMATIONS
+========================================================== -->
+
+<div
+    class="modal-overlay hidden"
+    id="infoModal"
+>
+
+    <div class="modal-card">
+
+        <button
+            class="modal-close"
+            id="closeInfoButton"
+            type="button"
+        >
+            ×
+        </button>
+
+        <div class="modal-icon">
+            ℹ
+        </div>
+
+        <p class="eyebrow">
+            CHATLOCAL
+        </p>
+
+        <h2>
+            À propos
+        </h2>
+
+        <p>
+            ChatLocal est une application de
+            messagerie instantanée fonctionnant
+            sur un réseau local.
+        </p>
+
+        <div class="info-items">
+
+            <div>
+                <span>Technologie</span>
+                <strong>Flask-SocketIO</strong>
+            </div>
+
+            <div>
+                <span>Communication</span>
+                <strong>WebSocket</strong>
+            </div>
+
+            <div>
+                <span>Base de données</span>
+                <strong>SQLite</strong>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<script src="https://cdn.socket.io/4.8.1/socket.io.min.js"></script>
+
+<script
+    src="{{ url_for('static', filename='js/chat.js') }}"
+></script>
+
 </body>
+
 </html>

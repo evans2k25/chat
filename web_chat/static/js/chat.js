@@ -1,199 +1,183 @@
 
-/* =========================================================
-   CHAT LOCAL
-   Socket.IO + Bootstrap
-========================================================= */
+// ============================================================
+// CHATLOCAL - chat.js
+// ============================================================
+
+"use strict";
+
+// ============================================================
+// SOCKET.IO
+// ============================================================
+//
+// IMPORTANT :
+// On force le transport HTTP polling pour éviter les erreurs
+// "xhr post error" / "transport error" sur le réseau local.
+//
+// Le serveur reste accessible via :
+// http://192.168.1.5:5000
+//
+// ============================================================
+
+const socket = io(window.location.origin, {
+
+    // Transport stable sur réseau local
+    transports: ["polling"],
+
+    // Empêche Socket.IO de tenter une mise à niveau WebSocket
+    upgrade: false,
+
+    // Reconnexion automatique
+    reconnection: true,
+    reconnectionAttempts: Infinity,
+    reconnectionDelay: 1000,
+    reconnectionDelayMax: 5000,
+
+    // Délai maximal de connexion
+    timeout: 10000
+
+});
 
 
-document.addEventListener("DOMContentLoaded", function () {
+// ============================================================
+// ÉTAT DE L'APPLICATION
+// ============================================================
 
-    "use strict";
-
-
-    /* =====================================================
-       SOCKET.IO
-    ====================================================== */
-
-    const socket = io();
+let pseudo = "";
+let messageCount = 0;
+let historiqueCharge = false;
 
 
-    /* =====================================================
-       VARIABLES
-    ====================================================== */
+// ============================================================
+// ÉLÉMENTS DOM
+// ============================================================
 
-    let pseudo = "";
+const connectionStatus =
+    document.getElementById("connectionStatus");
 
-    let connected = false;
+const themeToggle =
+    document.getElementById("themeToggle");
 
+const infoButton =
+    document.getElementById("infoButton");
 
-    /* =====================================================
-       ELEMENTS
-    ====================================================== */
+const statusDot =
+    document.getElementById("statusDot");
 
-    const messagesContainer =
-        document.getElementById("messagesContainer");
+const statusTitle =
+    document.getElementById("statusTitle");
 
-    const messages =
-        document.getElementById("messages");
+const statusText =
+    document.getElementById("statusText");
 
-    const messageInput =
-        document.getElementById("messageInput");
+const userCount =
+    document.getElementById("userCount");
 
-    const sendButton =
-        document.getElementById("sendButton");
+const networkText =
+    document.getElementById("networkText");
 
-    const pseudoInput =
-        document.getElementById("pseudoInput");
+const messageCountElement =
+    document.getElementById("messageCount");
 
-    const joinButton =
-        document.getElementById("joinButton");
+const onlineCount =
+    document.getElementById("onlineCount");
 
-    const pseudoError =
-        document.getElementById("pseudoError");
+const userSearch =
+    document.getElementById("userSearch");
 
-    const usersList =
-        document.getElementById("usersList");
+const userList =
+    document.getElementById("userList");
 
-    const usersCount =
-        document.getElementById("usersCount");
+const clearChatButton =
+    document.getElementById("clearChatButton");
 
-    const connectionText =
-        document.getElementById("connectionText");
+const chatStatus =
+    document.getElementById("chatStatus");
 
-    const onlineStatus =
-        document.getElementById("onlineStatus");
+const messagesContainer =
+    document.getElementById("messages");
 
-    const logoutButton =
-        document.getElementById("logoutButton");
+const typingIndicator =
+    document.getElementById("typingIndicator");
 
-    const openSidebar =
-        document.getElementById("openSidebar");
+const emojiButton =
+    document.getElementById("emojiButton");
 
-    const closeSidebar =
-        document.getElementById("closeSidebar");
+const messageInput =
+    document.getElementById("messageInput");
 
-    const sidebar =
-        document.getElementById("sidebar");
+const sendButton =
+    document.getElementById("sendButton");
 
-    const infoButton =
-        document.getElementById("infoButton");
+const pseudoModal =
+    document.getElementById("pseudoModal");
 
+const pseudoInput =
+    document.getElementById("pseudoInput");
 
-    /* =====================================================
-       MODAL PSEUDO
-    ====================================================== */
+const joinButton =
+    document.getElementById("joinButton");
 
-    const pseudoModalElement =
-        document.getElementById("pseudoModal");
+const infoModal =
+    document.getElementById("infoModal");
 
-    const pseudoModal =
-        new bootstrap.Modal(
-            pseudoModalElement
-        );
-
-
-    /* =====================================================
-       MODAL INFO
-    ====================================================== */
-
-    const infoModalElement =
-        document.getElementById("infoModal");
-
-    const infoModal =
-        new bootstrap.Modal(
-            infoModalElement
-        );
+const closeInfoButton =
+    document.getElementById("closeInfoButton");
 
 
-    /* =====================================================
-       AFFICHER MODAL PSEUDO
-    ====================================================== */
+// ============================================================
+// INITIALISATION
+// ============================================================
 
-    pseudoModal.show();
+document.addEventListener("DOMContentLoaded", () => {
 
+    chargerTheme();
 
-    setTimeout(function () {
+    mettreAJourEtatConnexion(false);
 
+    if (pseudoInput) {
         pseudoInput.focus();
+    }
 
-    }, 500);
-
-
-    /* =====================================================
-       CONNEXION SOCKET
-    ====================================================== */
-
-    socket.on("connect", function () {
-
-        connected = true;
-
-        connectionText.textContent =
-            "Connecté au serveur";
-
-        onlineStatus.innerHTML =
-            '<span class="online-dot"></span> En ligne';
-
-        console.log(
-            "[SOCKET] Connecté :",
-            socket.id
-        );
-
-    });
+});
 
 
-    /* =====================================================
-       DECONNEXION SOCKET
-    ====================================================== */
+// ============================================================
+// SOCKET.IO : CONNEXION
+// ============================================================
 
-    socket.on("disconnect", function () {
+socket.on("connect", () => {
 
-        connected = false;
+    console.log(
+        "ChatLocal connecté."
+    );
 
-        connectionText.textContent =
-            "Déconnecté";
+    console.log(
+        "SID :",
+        socket.id
+    );
 
-        onlineStatus.innerHTML =
-            '<span style="color:#ef4444;">●</span> Hors ligne';
+    console.log(
+        "Transport :",
+        socket.io.engine?.transport?.name || "inconnu"
+    );
 
-        console.log(
-            "[SOCKET] Déconnecté"
-        );
-
-    });
-
-
-    /* =====================================================
-       REJOINDRE LE CHAT
-    ====================================================== */
-
-    function rejoindreChat() {
-
-        const valeur =
-            pseudoInput.value.trim();
+    console.log(
+        "Serveur :",
+        window.location.origin
+    );
 
 
-        if (!valeur) {
-
-            pseudoError.classList.add("show");
-
-            pseudoInput.focus();
-
-            return;
-        }
+    mettreAJourEtatConnexion(true);
 
 
-        pseudoError.classList.remove("show");
+    /*
+     * Après une reconnexion Socket.IO,
+     * le serveur possède un nouveau SID.
+     *
+     * On doit donc réidentifier l'utilisateur.
+     */
 
-
-        pseudo =
-            valeur.substring(0, 30);
-
-
-        localStorage.setItem(
-            "chat_pseudo",
-            pseudo
-        );
-
+    if (pseudo) {
 
         socket.emit(
             "connexion",
@@ -202,733 +186,1365 @@ document.addEventListener("DOMContentLoaded", function () {
             }
         );
 
+        historiqueCharge = false;
 
-        pseudoModal.hide();
+        demanderHistorique();
+
+    }
+
+});
 
 
-        messageInput.focus();
+// ============================================================
+// SOCKET.IO : DÉCONNEXION
+// ============================================================
+
+socket.on("disconnect", (reason) => {
+
+    console.log(
+        "ChatLocal déconnecté :",
+        reason
+    );
+
+    mettreAJourEtatConnexion(false);
+
+});
 
 
-        console.log(
-            "[CHAT] Pseudo :",
-            pseudo
-        );
+// ============================================================
+// SOCKET.IO : ERREUR DE CONNEXION
+// ============================================================
+
+socket.on("connect_error", (error) => {
+
+    console.error(
+        "=================================================="
+    );
+
+    console.error(
+        "ERREUR SOCKET.IO"
+    );
+
+    console.error(
+        "=================================================="
+    );
+
+    console.error(
+        "Message :",
+        error.message
+    );
+
+    console.error(
+        "Erreur complète :",
+        error
+    );
+
+    console.error(
+        "Transport utilisé :",
+        socket.io.engine?.transport?.name || "inconnu"
+    );
+
+    console.error(
+        "URL du serveur :",
+        window.location.origin
+    );
+
+
+    mettreAJourEtatConnexion(false);
+
+
+    connectionStatus.textContent =
+        "Serveur inaccessible";
+
+    statusDot.classList.remove(
+        "online"
+    );
+
+    statusDot.classList.add(
+        "offline"
+    );
+
+    statusTitle.textContent =
+        "Hors ligne";
+
+    statusText.textContent =
+        "Impossible de joindre le serveur";
+
+    networkText.textContent =
+        "Hors ligne";
+
+    chatStatus.textContent =
+        "Connexion impossible";
+
+});
+
+
+// ============================================================
+// REJOINDRE LE CHAT
+// ============================================================
+
+joinButton.addEventListener(
+    "click",
+    rejoindreChat
+);
+
+
+pseudoInput.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (event.key === "Enter") {
+
+            event.preventDefault();
+
+            rejoindreChat();
+
+        }
+
+    }
+);
+
+
+function rejoindreChat() {
+
+    const valeur =
+        pseudoInput.value.trim();
+
+
+    // --------------------------------------------------------
+    // Vérification du pseudo
+    // --------------------------------------------------------
+
+    if (!valeur) {
+
+        afficherErreurPseudo();
+
+        return;
+
     }
 
 
-    /* =====================================================
-       BOUTON REJOINDRE
-    ====================================================== */
+    // --------------------------------------------------------
+    // Limitation à 30 caractères
+    // --------------------------------------------------------
 
-    joinButton.addEventListener(
-        "click",
-        rejoindreChat
+    pseudo =
+        valeur.substring(0, 30);
+
+
+    // --------------------------------------------------------
+    // Fermer la fenêtre
+    // --------------------------------------------------------
+
+    pseudoModal.classList.add(
+        "hidden"
     );
 
 
-    /* =====================================================
-       ENTER DANS PSEUDO
-    ====================================================== */
-
-    pseudoInput.addEventListener(
-        "keydown",
-        function (event) {
-
-            if (event.key === "Enter") {
-
-                event.preventDefault();
-
-                rejoindreChat();
-            }
-
-        }
-    );
+    chatStatus.textContent =
+        "Connexion en cours...";
 
 
-    /* =====================================================
-       MESSAGE
-    ====================================================== */
+    // --------------------------------------------------------
+    // Connexion au serveur
+    // --------------------------------------------------------
 
-    function envoyerMessage() {
-
-        const message =
-            messageInput.value.trim();
-
-
-        if (!message) {
-
-            return;
-        }
-
-
-        if (!connected) {
-
-            afficherMessageSysteme(
-                "Vous n'êtes pas connecté au serveur."
-            );
-
-            return;
-        }
-
-
-        if (!pseudo) {
-
-            pseudoModal.show();
-
-            return;
-        }
-
+    if (socket.connected) {
 
         socket.emit(
-            "message",
+            "connexion",
             {
-                message: message
+                pseudo: pseudo
             }
         );
 
+        historiqueCharge = false;
 
-        messageInput.value = "";
+        demanderHistorique();
 
-        messageInput.focus();
+    } else {
+
+        chatStatus.textContent =
+            "Connexion au serveur...";
 
     }
 
 
-    /* =====================================================
-       BOUTON ENVOYER
-    ====================================================== */
+    messageInput.focus();
 
-    sendButton.addEventListener(
-        "click",
-        envoyerMessage
+}
+
+
+// ============================================================
+// ERREUR PSEUDO
+// ============================================================
+
+function afficherErreurPseudo() {
+
+    pseudoInput.classList.add(
+        "input-error"
     );
 
 
-    /* =====================================================
-       ENTER POUR ENVOYER
-    ====================================================== */
+    setTimeout(() => {
 
-    messageInput.addEventListener(
-        "keydown",
-        function (event) {
+        pseudoInput.classList.remove(
+            "input-error"
+        );
 
-            if (event.key === "Enter") {
+    }, 500);
 
-                event.preventDefault();
 
-                envoyerMessage();
-            }
+    pseudoInput.focus();
 
-        }
+}
+
+
+// ============================================================
+// DEMANDER L'HISTORIQUE
+// ============================================================
+
+function demanderHistorique() {
+
+    if (!socket.connected) {
+        return;
+    }
+
+    socket.emit(
+        "demander_historique"
     );
 
-
-    /* =====================================================
-       RECEVOIR UN MESSAGE
-    ====================================================== */
-
-    socket.on(
-        "nouveau_message",
-        function (data) {
-
-            if (!data) {
-
-                return;
-            }
+}
 
 
-            supprimerBienvenue();
+// ============================================================
+// RÉCEPTION DE L'HISTORIQUE
+// ============================================================
 
+socket.on(
+    "historique_messages",
+    (messages) => {
 
-            const estMoi =
-                data.pseudo === pseudo;
-
-
-            afficherMessage(
-                data.pseudo || "Utilisateur",
-                data.message || "",
-                data.heure || obtenirHeure(),
-                estMoi
-            );
-
+        if (!Array.isArray(messages)) {
+            return;
         }
-    );
-
-
-    /* =====================================================
-       MESSAGE SYSTEME
-    ====================================================== */
-
-    socket.on(
-        "message_systeme",
-        function (data) {
-
-            if (!data) {
-
-                return;
-            }
-
-
-            supprimerBienvenue();
-
-
-            afficherMessageSysteme(
-                data.message || "",
-                data.heure || obtenirHeure()
-            );
-
-        }
-    );
-
-
-    /* =====================================================
-       LISTE DES UTILISATEURS
-    ====================================================== */
-
-    socket.on(
-        "liste_utilisateurs",
-        function (utilisateurs) {
-
-            afficherUtilisateurs(
-                utilisateurs || []
-            );
-
-        }
-    );
-
-
-    /* =====================================================
-       AFFICHER MESSAGE
-    ====================================================== */
-
-    function afficherMessage(
-        expediteur,
-        texte,
-        heure,
-        estMoi
-    ) {
-
-        const row =
-            document.createElement("div");
-
-
-        row.className =
-            "message-row " +
-            (estMoi ? "mine" : "other");
-
-
-        const content =
-            document.createElement("div");
-
-
-        content.className =
-            "message-content";
-
-
-        if (!estMoi) {
-
-            const sender =
-                document.createElement("div");
-
-
-            sender.className =
-                "message-sender";
-
-
-            sender.textContent =
-                expediteur;
-
-
-            content.appendChild(sender);
-
-        }
-
-
-        const bubble =
-            document.createElement("div");
-
-
-        bubble.className =
-            "message-bubble";
 
 
         /*
-         * textContent est volontairement utilisé
-         * pour empêcher l'injection de HTML/JS.
+         * Évite de charger deux fois
+         * le même historique.
          */
 
-        bubble.textContent =
-            texte;
-
-
-        const time =
-            document.createElement("div");
-
-
-        time.className =
-            "message-time";
-
-
-        time.textContent =
-            heure;
-
-
-        content.appendChild(bubble);
-
-        content.appendChild(time);
-
-        row.appendChild(content);
-
-        messages.appendChild(row);
-
-
-        faireDefilerVersBas();
-
-    }
-
-
-    /* =====================================================
-       MESSAGE SYSTEME
-    ====================================================== */
-
-    function afficherMessageSysteme(
-        texte,
-        heure = ""
-    ) {
-
-        const wrapper =
-            document.createElement("div");
-
-
-        wrapper.className =
-            "system-message";
-
-
-        const message =
-            document.createElement("span");
-
-
-        message.textContent =
-            texte +
-            (heure ? " • " + heure : "");
-
-
-        wrapper.appendChild(message);
-
-        messages.appendChild(wrapper);
-
-
-        faireDefilerVersBas();
-
-    }
-
-
-    /* =====================================================
-       UTILISATEURS
-    ====================================================== */
-
-    function afficherUtilisateurs(
-        utilisateurs
-    ) {
-
-        usersList.innerHTML = "";
-
-
-        usersCount.textContent =
-            utilisateurs.length;
-
-
-        if (utilisateurs.length === 0) {
-
-            const empty =
-                document.createElement("div");
-
-
-            empty.className =
-                "empty-users";
-
-
-            empty.innerHTML =
-                `
-                <i class="bi bi-person"></i>
-                <span>Aucun utilisateur</span>
-                `;
-
-
-            usersList.appendChild(empty);
-
+        if (historiqueCharge) {
             return;
         }
 
 
-        utilisateurs.forEach(
-            function (nom) {
-
-                const item =
-                    document.createElement("div");
+        historiqueCharge = true;
 
 
-                item.className =
-                    "user-item";
+        // ----------------------------------------------------
+        // Nettoyage
+        // ----------------------------------------------------
+
+        messagesContainer.innerHTML = "";
+
+        messageCount = 0;
 
 
-                const avatar =
-                    document.createElement("div");
+        // ----------------------------------------------------
+        // Affichage
+        // ----------------------------------------------------
+
+        messages.forEach((message) => {
+
+            afficherMessage(
+                message.pseudo,
+                message.message,
+                message.heure,
+                message.pseudo === pseudo
+            );
+
+            messageCount++;
+
+        });
 
 
-                avatar.className =
-                    "user-avatar";
+        mettreAJourCompteurMessages();
 
 
-                avatar.textContent =
-                    obtenirInitiales(nom);
+        // ----------------------------------------------------
+        // Aucun message
+        // ----------------------------------------------------
 
+        if (messages.length === 0) {
 
-                const info =
-                    document.createElement("div");
-
-
-                info.className =
-                    "user-info";
-
-
-                const name =
-                    document.createElement("span");
-
-
-                name.className =
-                    "user-name";
-
-
-                name.textContent =
-                    nom;
-
-
-                const status =
-                    document.createElement("span");
-
-
-                status.className =
-                    "user-online";
-
-
-                status.innerHTML =
-                    `
-                    <span class="status-dot">
-                    </span>
-                    En ligne
-                    `;
-
-
-                info.appendChild(name);
-
-                info.appendChild(status);
-
-                item.appendChild(avatar);
-
-                item.appendChild(info);
-
-
-                usersList.appendChild(item);
-
-            }
-        );
-
-    }
-
-
-    /* =====================================================
-       INITIALLES
-    ====================================================== */
-
-    function obtenirInitiales(nom) {
-
-        if (!nom) {
-
-            return "?";
-        }
-
-
-        const mots =
-            nom.trim().split(/\s+/);
-
-
-        if (mots.length === 1) {
-
-            return mots[0]
-                .substring(0, 2)
-                .toUpperCase();
+            afficherBienvenue();
 
         }
 
 
-        return (
-            mots[0][0] +
-            mots[mots.length - 1][0]
-        ).toUpperCase();
+        faireDefilerVersBas();
 
     }
+);
 
 
-    /* =====================================================
-       HEURE
-    ====================================================== */
+// ============================================================
+// RÉCEPTION D'UN NOUVEAU MESSAGE
+// ============================================================
 
-    function obtenirHeure() {
+socket.on(
+    "nouveau_message",
+    (data) => {
 
-        const maintenant =
-            new Date();
-
-
-        return maintenant.toLocaleTimeString(
-            "fr-FR",
-            {
-                hour: "2-digit",
-                minute: "2-digit"
-            }
-        );
-
-    }
+        if (!data) {
+            return;
+        }
 
 
-    /* =====================================================
-       SCROLL
-    ====================================================== */
-
-    function faireDefilerVersBas() {
-
-        requestAnimationFrame(
-            function () {
-
-                messagesContainer.scrollTo(
-                    {
-                        top:
-                            messagesContainer.scrollHeight,
-
-                        behavior:
-                            "smooth"
-                    }
-                );
-
-            }
-        );
-
-    }
-
-
-    /* =====================================================
-       SUPPRIMER BIENVENUE
-    ====================================================== */
-
-    function supprimerBienvenue() {
+        // Si le message de bienvenue est affiché,
+        // on le retire.
 
         const welcome =
-            document.querySelector(
+            messagesContainer.querySelector(
                 ".welcome-message"
             );
 
-
         if (welcome) {
-
             welcome.remove();
         }
 
+
+        afficherMessage(
+            data.pseudo,
+            data.message,
+            data.heure,
+            data.pseudo === pseudo
+        );
+
+
+        messageCount++;
+
+
+        mettreAJourCompteurMessages();
+
+
+        faireDefilerVersBas();
+
+    }
+);
+
+
+// ============================================================
+// MESSAGE SYSTÈME
+// ============================================================
+
+socket.on(
+    "message_systeme",
+    (data) => {
+
+        if (!data) {
+            return;
+        }
+
+
+        afficherMessageSysteme(
+            data.message,
+            data.heure
+        );
+
+    }
+);
+
+
+// ============================================================
+// LISTE DES UTILISATEURS
+// ============================================================
+
+socket.on(
+    "liste_utilisateurs",
+    (utilisateurs) => {
+
+        if (!Array.isArray(utilisateurs)) {
+            return;
+        }
+
+
+        afficherUtilisateurs(
+            utilisateurs
+        );
+
+    }
+);
+
+
+// ============================================================
+// AFFICHER UN MESSAGE
+// ============================================================
+
+function afficherMessage(
+    auteur,
+    contenu,
+    heure,
+    estMoi = false
+) {
+
+    const messageElement =
+        document.createElement("div");
+
+
+    messageElement.className =
+        estMoi
+            ? "message message-me"
+            : "message message-other";
+
+
+    // --------------------------------------------------------
+    // AVATAR
+    // --------------------------------------------------------
+
+    const avatar =
+        document.createElement("div");
+
+    avatar.className =
+        "message-avatar";
+
+    avatar.textContent =
+        obtenirInitiales(auteur);
+
+
+    // --------------------------------------------------------
+    // CONTENU
+    // --------------------------------------------------------
+
+    const content =
+        document.createElement("div");
+
+    content.className =
+        "message-content";
+
+
+    // --------------------------------------------------------
+    // AUTEUR
+    // --------------------------------------------------------
+
+    const author =
+        document.createElement("div");
+
+    author.className =
+        "message-author";
+
+    author.textContent =
+        estMoi
+            ? "Vous"
+            : auteur;
+
+
+    // --------------------------------------------------------
+    // BULLE
+    // --------------------------------------------------------
+
+    const bubble =
+        document.createElement("div");
+
+    bubble.className =
+        "message-bubble";
+
+
+    /*
+     * textContent au lieu de innerHTML :
+     * protège l'application contre l'injection HTML.
+     */
+
+    bubble.textContent =
+        contenu;
+
+
+    // --------------------------------------------------------
+    // HEURE
+    // --------------------------------------------------------
+
+    const time =
+        document.createElement("span");
+
+    time.className =
+        "message-time";
+
+    time.textContent =
+        heure || "";
+
+
+    // --------------------------------------------------------
+    // CONSTRUCTION
+    // --------------------------------------------------------
+
+    content.appendChild(
+        author
+    );
+
+    content.appendChild(
+        bubble
+    );
+
+    content.appendChild(
+        time
+    );
+
+
+    messageElement.appendChild(
+        avatar
+    );
+
+    messageElement.appendChild(
+        content
+    );
+
+
+    messagesContainer.appendChild(
+        messageElement
+    );
+
+}
+
+
+// ============================================================
+// MESSAGE SYSTÈME
+// ============================================================
+
+function afficherMessageSysteme(
+    contenu,
+    heure
+) {
+
+    const element =
+        document.createElement("div");
+
+    element.className =
+        "system-message";
+
+
+    const text =
+        document.createElement("span");
+
+    text.textContent =
+        contenu;
+
+
+    const time =
+        document.createElement("small");
+
+    time.textContent =
+        heure || "";
+
+
+    element.appendChild(
+        text
+    );
+
+    element.appendChild(
+        time
+    );
+
+
+    messagesContainer.appendChild(
+        element
+    );
+
+
+    faireDefilerVersBas();
+
+}
+
+
+// ============================================================
+// MESSAGE DE BIENVENUE
+// ============================================================
+
+function afficherBienvenue() {
+
+    messagesContainer.innerHTML = `
+
+        <div class="welcome-message">
+
+            <div class="welcome-icon">
+                ✦
+            </div>
+
+            <h3>
+                Bienvenue sur ChatLocal
+            </h3>
+
+            <p>
+                Aucun message pour le moment.
+                Soyez le premier à écrire !
+            </p>
+
+        </div>
+
+    `;
+
+}
+
+
+// ============================================================
+// UTILISATEURS
+// ============================================================
+
+function afficherUtilisateurs(
+    utilisateurs
+) {
+
+    userList.innerHTML = "";
+
+
+    const nombre =
+        utilisateurs.length;
+
+
+    // --------------------------------------------------------
+    // Compteurs
+    // --------------------------------------------------------
+
+    userCount.textContent =
+        nombre;
+
+    onlineCount.textContent =
+        `${nombre} ${
+            nombre > 1
+                ? "utilisateurs"
+                : "utilisateur"
+        } en ligne`;
+
+
+    // --------------------------------------------------------
+    // Aucun utilisateur
+    // --------------------------------------------------------
+
+    if (nombre === 0) {
+
+        userList.innerHTML = `
+
+            <div class="empty-state">
+                Aucun utilisateur connecté.
+            </div>
+
+        `;
+
+        return;
+
     }
 
 
-    /* =====================================================
-       MENU MOBILE
-    ====================================================== */
+    // --------------------------------------------------------
+    // Liste
+    // --------------------------------------------------------
 
-    openSidebar.addEventListener(
-        "click",
-        function () {
+    utilisateurs.forEach(
+        (nom) => {
 
-            sidebar.classList.add(
-                "open"
+            const userElement =
+                document.createElement("div");
+
+            userElement.className =
+                "user-item";
+
+
+            userElement.dataset.name =
+                nom.toLowerCase();
+
+
+            // ------------------------------------------------
+            // Avatar
+            // ------------------------------------------------
+
+            const avatar =
+                document.createElement("div");
+
+            avatar.className =
+                "user-avatar";
+
+            avatar.textContent =
+                obtenirInitiales(nom);
+
+
+            // ------------------------------------------------
+            // Informations
+            // ------------------------------------------------
+
+            const info =
+                document.createElement("div");
+
+            info.className =
+                "user-info";
+
+
+            const name =
+                document.createElement("strong");
+
+            name.textContent =
+                nom === pseudo
+                    ? `${nom} (Vous)`
+                    : nom;
+
+
+            const status =
+                document.createElement("span");
+
+            status.textContent =
+                "En ligne";
+
+
+            // ------------------------------------------------
+            // Indicateur
+            // ------------------------------------------------
+
+            const dot =
+                document.createElement("span");
+
+            dot.className =
+                "user-online-dot";
+
+
+            // ------------------------------------------------
+            // Construction
+            // ------------------------------------------------
+
+            info.appendChild(
+                name
+            );
+
+            info.appendChild(
+                status
+            );
+
+
+            userElement.appendChild(
+                avatar
+            );
+
+            userElement.appendChild(
+                info
+            );
+
+            userElement.appendChild(
+                dot
+            );
+
+
+            userList.appendChild(
+                userElement
             );
 
         }
     );
 
+}
 
-    closeSidebar.addEventListener(
-        "click",
-        function () {
 
-            sidebar.classList.remove(
-                "open"
+// ============================================================
+// RECHERCHE DES UTILISATEURS
+// ============================================================
+
+userSearch.addEventListener(
+    "input",
+    () => {
+
+        const recherche =
+            userSearch.value
+                .trim()
+                .toLowerCase();
+
+
+        const utilisateurs =
+            userList.querySelectorAll(
+                ".user-item"
             );
 
-        }
-    );
+
+        utilisateurs.forEach(
+            (utilisateur) => {
+
+                const nom =
+                    utilisateur.dataset.name ||
+                    "";
 
 
-    /* =====================================================
-       INFORMATIONS
-    ====================================================== */
-
-    infoButton.addEventListener(
-        "click",
-        function () {
-
-            infoModal.show();
-
-        }
-    );
-
-
-    /* =====================================================
-       DECONNEXION
-    ====================================================== */
-
-    logoutButton.addEventListener(
-        "click",
-        function () {
-
-            if (connected) {
-
-                socket.disconnect();
-
-            }
-
-
-            connected = false;
-
-            pseudo = "";
-
-            usersList.innerHTML = "";
-
-
-            usersCount.textContent =
-                "0";
-
-
-            connectionText.textContent =
-                "Déconnecté";
-
-
-            pseudoInput.value = "";
-
-
-            pseudoModal.show();
-
-        }
-    );
-
-
-    /* =====================================================
-       EMOJI
-    ====================================================== */
-
-    document
-        .getElementById("emojiButton")
-        .addEventListener(
-            "click",
-            function () {
-
-                const emojis = [
-                    "😀",
-                    "😂",
-                    "😍",
-                    "👍",
-                    "❤️",
-                    "🔥",
-                    "🎉",
-                    "👏",
-                    "😊",
-                    "😎"
-                ];
-
-
-                const emoji =
-                    emojis[
-                        Math.floor(
-                            Math.random() *
-                            emojis.length
-                        )
-                    ];
-
-
-                messageInput.value +=
-                    emoji;
-
-
-                messageInput.focus();
+                utilisateur.style.display =
+                    nom.includes(recherche)
+                        ? "flex"
+                        : "none";
 
             }
         );
 
+    }
+);
 
-    /* =====================================================
-       PIECE JOINTE
-    ====================================================== */
 
-    document
-        .getElementById("attachmentButton")
-        .addEventListener(
-            "click",
-            function () {
+// ============================================================
+// ENVOYER UN MESSAGE
+// ============================================================
 
-                afficherMessageSysteme(
-                    "Le partage de fichiers sera ajouté prochainement."
-                );
+sendButton.addEventListener(
+    "click",
+    envoyerMessage
+);
 
-            }
+
+messageInput.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (
+            event.key === "Enter" &&
+            !event.shiftKey
+        ) {
+
+            event.preventDefault();
+
+            envoyerMessage();
+
+        }
+
+    }
+);
+
+
+function envoyerMessage() {
+
+    const message =
+        messageInput.value.trim();
+
+
+    // --------------------------------------------------------
+    // Message vide
+    // --------------------------------------------------------
+
+    if (!message) {
+        return;
+    }
+
+
+    // --------------------------------------------------------
+    // Vérification pseudo
+    // --------------------------------------------------------
+
+    if (!pseudo) {
+
+        pseudoModal.classList.remove(
+            "hidden"
+        );
+
+        pseudoInput.focus();
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Vérification connexion
+    // --------------------------------------------------------
+
+    if (!socket.connected) {
+
+        afficherMessageSysteme(
+            "Impossible d'envoyer le message : serveur déconnecté.",
+            obtenirHeure()
+        );
+
+        console.error(
+            "Tentative d'envoi alors que Socket.IO est déconnecté."
+        );
+
+        return;
+
+    }
+
+
+    // --------------------------------------------------------
+    // Envoi
+    // --------------------------------------------------------
+
+    socket.emit(
+        "message",
+        {
+            message: message.substring(
+                0,
+                2000
+            )
+        }
+    );
+
+
+    // --------------------------------------------------------
+    // Nettoyage
+    // --------------------------------------------------------
+
+    messageInput.value = "";
+
+    messageInput.focus();
+
+}
+
+
+// ============================================================
+// EFFACER L'AFFICHAGE
+// ============================================================
+
+clearChatButton.addEventListener(
+    "click",
+    () => {
+
+        messagesContainer.innerHTML = "";
+
+        messageCount = 0;
+
+        mettreAJourCompteurMessages();
+
+        afficherBienvenue();
+
+    }
+);
+
+
+// ============================================================
+// COMPTEUR DE MESSAGES
+// ============================================================
+
+function mettreAJourCompteurMessages() {
+
+    messageCountElement.textContent =
+        messageCount;
+
+}
+
+
+// ============================================================
+// ÉTAT DE CONNEXION
+// ============================================================
+
+function mettreAJourEtatConnexion(
+    connecte
+) {
+
+    if (connecte) {
+
+        connectionStatus.textContent =
+            "Connecté au serveur";
+
+
+        statusDot.classList.remove(
+            "offline"
+        );
+
+        statusDot.classList.add(
+            "online"
         );
 
 
-    /* =====================================================
-       PSEUDO EXISTANT
-    ====================================================== */
+        statusTitle.textContent =
+            "En ligne";
 
-    const ancienPseudo =
+
+        statusText.textContent =
+            "Serveur accessible";
+
+
+        networkText.textContent =
+            "En ligne";
+
+
+        chatStatus.textContent =
+            pseudo
+                ? "Connexion active"
+                : "Prêt à rejoindre";
+
+
+    } else {
+
+        connectionStatus.textContent =
+            "Déconnecté";
+
+
+        statusDot.classList.remove(
+            "online"
+        );
+
+        statusDot.classList.add(
+            "offline"
+        );
+
+
+        statusTitle.textContent =
+            "Hors ligne";
+
+
+        statusText.textContent =
+            "Connexion au serveur...";
+
+
+        networkText.textContent =
+            "Hors ligne";
+
+
+        chatStatus.textContent =
+            "En attente de connexion";
+
+    }
+
+}
+
+
+// ============================================================
+// DÉFILEMENT
+// ============================================================
+
+function faireDefilerVersBas() {
+
+    messagesContainer.scrollTo({
+
+        top:
+            messagesContainer.scrollHeight,
+
+        behavior:
+            "smooth"
+
+    });
+
+}
+
+
+// ============================================================
+// INITIALES
+// ============================================================
+
+function obtenirInitiales(nom) {
+
+    if (!nom) {
+        return "?";
+    }
+
+
+    const morceaux =
+        nom
+            .trim()
+            .split(/\s+/);
+
+
+    if (morceaux.length === 1) {
+
+        return morceaux[0]
+            .substring(0, 2)
+            .toUpperCase();
+
+    }
+
+
+    return (
+        morceaux[0].charAt(0) +
+        morceaux[1].charAt(0)
+    ).toUpperCase();
+
+}
+
+
+// ============================================================
+// HEURE
+// ============================================================
+
+function obtenirHeure() {
+
+    const maintenant =
+        new Date();
+
+
+    return maintenant.toLocaleTimeString(
+        "fr-FR",
+        {
+            hour: "2-digit",
+            minute: "2-digit"
+        }
+    );
+
+}
+
+
+// ============================================================
+// THÈME
+// ============================================================
+
+themeToggle.addEventListener(
+    "click",
+    () => {
+
+        document.body.classList.toggle(
+            "dark"
+        );
+
+
+        const modeSombre =
+            document.body.classList.contains(
+                "dark"
+            );
+
+
+        localStorage.setItem(
+            "chatlocal-theme",
+            modeSombre
+                ? "dark"
+                : "light"
+        );
+
+
+        themeToggle.textContent =
+            modeSombre
+                ? "☀"
+                : "☼";
+
+    }
+);
+
+
+// ============================================================
+// CHARGER LE THÈME
+// ============================================================
+
+function chargerTheme() {
+
+    const theme =
         localStorage.getItem(
-            "chat_pseudo"
+            "chatlocal-theme"
         );
 
 
-    if (ancienPseudo) {
+    if (theme === "dark") {
 
-        pseudoInput.value =
-            ancienPseudo;
+        document.body.classList.add(
+            "dark"
+        );
+
+        themeToggle.textContent =
+            "☀";
+
+    } else {
+
+        document.body.classList.remove(
+            "dark"
+        );
+
+        themeToggle.textContent =
+            "☼";
 
     }
 
+}
 
-    /* =====================================================
-       FERMER SIDEBAR APRÈS CLIC
-       SUR MOBILE
-    ====================================================== */
 
-    document.addEventListener(
-        "click",
-        function (event) {
+// ============================================================
+// MODALE INFORMATIONS
+// ============================================================
 
-            if (
-                window.innerWidth <= 768 &&
-                sidebar.classList.contains("open") &&
-                !sidebar.contains(event.target) &&
-                !openSidebar.contains(event.target)
-            ) {
+infoButton.addEventListener(
+    "click",
+    () => {
 
-                sidebar.classList.remove(
-                    "open"
-                );
+        infoModal.classList.remove(
+            "hidden"
+        );
 
-            }
+    }
+);
+
+
+closeInfoButton.addEventListener(
+    "click",
+    () => {
+
+        infoModal.classList.add(
+            "hidden"
+        );
+
+    }
+);
+
+
+infoModal.addEventListener(
+    "click",
+    (event) => {
+
+        if (
+            event.target === infoModal
+        ) {
+
+            infoModal.classList.add(
+                "hidden"
+            );
 
         }
+
+    }
+);
+
+
+// ============================================================
+// ESCAPE
+// ============================================================
+
+document.addEventListener(
+    "keydown",
+    (event) => {
+
+        if (event.key !== "Escape") {
+            return;
+        }
+
+
+        if (
+            !infoModal.classList.contains(
+                "hidden"
+            )
+        ) {
+
+            infoModal.classList.add(
+                "hidden"
+            );
+
+        }
+
+    }
+);
+
+
+// ============================================================
+// EMOJI
+// ============================================================
+
+emojiButton.addEventListener(
+    "click",
+    () => {
+
+        const emojis = [
+
+            "😀",
+            "😂",
+            "😊",
+            "😍",
+            "👍",
+            "❤️",
+            "🔥",
+            "🎉",
+            "👏",
+            "😎",
+            "🙌",
+            "😉",
+            "🤝",
+            "💯",
+            "✨"
+
+        ];
+
+
+        const emoji =
+            emojis[
+                Math.floor(
+                    Math.random() *
+                    emojis.length
+                )
+            ];
+
+
+        const start =
+            messageInput.selectionStart;
+
+
+        const end =
+            messageInput.selectionEnd;
+
+
+        const texte =
+            messageInput.value;
+
+
+        messageInput.value =
+            texte.substring(
+                0,
+                start
+            ) +
+            emoji +
+            texte.substring(
+                end
+            );
+
+
+        messageInput.focus();
+
+
+        const nouvellePosition =
+            start + emoji.length;
+
+
+        messageInput.setSelectionRange(
+            nouvellePosition,
+            nouvellePosition
+        );
+
+    }
+);
+
+
+// ============================================================
+// TYPING INDICATOR
+// ============================================================
+
+function afficherTyping() {
+
+    typingIndicator.classList.add(
+        "visible"
     );
 
+}
 
-    /* =====================================================
-       LOG
-    ====================================================== */
 
-    console.log(
-        "Chat Local initialisé."
+function masquerTyping() {
+
+    typingIndicator.classList.remove(
+        "visible"
     );
 
-});
+}
+
+
+// Actuellement désactivé.
+// La fonctionnalité pourra être connectée
+// à Socket.IO ultérieurement.
+
+masquerTyping();
+
+
+// ============================================================
+// LIMITATION DU MESSAGE
+// ============================================================
+
+messageInput.addEventListener(
+    "input",
+    () => {
+
+        if (
+            messageInput.value.length >
+            2000
+        ) {
+
+            messageInput.value =
+                messageInput.value.substring(
+                    0,
+                    2000
+                );
+
+        }
+
+    }
+);
+
 
